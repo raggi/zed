@@ -510,11 +510,27 @@ impl Asset for ImageAssetLoader {
         cx: &mut App,
     ) -> impl Future<Output = Self::Output> + Send + 'static {
         let client = cx.http_client();
+
+        // get off the stack so we can check all the windows
+        let scale_factor = cx.spawn(|cx| async move {
+            cx.update(|cx| {
+                cx.windows()
+                    .iter()
+                    .filter_map(|window| {
+                        window.update(cx, |_, window, _| window.scale_factor()).ok()
+                    })
+                    .reduce(|a, b| if a > b { a } else { b })
+            })
+            .ok()
+            .flatten()
+        });
         // TODO: Can we make SVGs always rescale?
         // let scale_factor = cx.scale_factor();
+        // dbg!(&scale_factor);
         let svg_renderer = cx.svg_renderer();
         let asset_source = cx.asset_source().clone();
         async move {
+            let scale_factor = dbg!(scale_factor.await).unwrap_or(2.0);
             let bytes = match source.clone() {
                 Resource::Path(uri) => fs::read(uri.as_ref())?,
                 Resource::Uri(uri) => {
