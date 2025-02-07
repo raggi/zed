@@ -264,7 +264,12 @@ pub enum InlayId {
 
 impl InlayId {
     fn id(&self) -> usize {
-        match self {
+        match
+        
+        
+        
+        
+        self {
             Self::InlineCompletion(id) => *id,
             Self::Hint(id) => *id,
         }
