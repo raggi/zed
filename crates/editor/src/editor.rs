@@ -270,6 +270,9 @@ impl InlayId {
         
         
         self {
+
+
+            
             Self::InlineCompletion(id) => *id,
             Self::Hint(id) => *id,
         }
