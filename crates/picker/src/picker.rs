@@ -26,6 +26,7 @@ actions!(picker, [ConfirmCompletion]);
 /// ConfirmInput is an alternative editor action which - instead of selecting active picker entry - treats pickers editor input literally,
 /// performing some kind of action on it.
 #[derive(Clone, PartialEq, Deserialize, JsonSchema, Default)]
+#[serde(deny_unknown_fields)]
 pub struct ConfirmInput {
     pub secondary: bool,
 }
@@ -281,16 +282,16 @@ impl<D: PickerDelegate> Picker<D> {
                 ElementContainer::UniformList(UniformListScrollHandle::new())
             }
             ContainerKind::List => {
-                let model = cx.entity().downgrade();
+                let entity = cx.entity().downgrade();
                 ElementContainer::List(ListState::new(
                     0,
                     gpui::ListAlignment::Top,
                     px(1000.),
                     move |ix, window, cx| {
-                        model
+                        entity
                             .upgrade()
-                            .map(|model| {
-                                model.update(cx, |this, cx| {
+                            .map(|entity| {
+                                entity.update(cx, |this, cx| {
                                     this.render_element(window, cx, ix).into_any_element()
                                 })
                             })

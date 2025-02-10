@@ -2,14 +2,19 @@ use ::settings::Settings;
 use git::status::FileStatus;
 use git_panel_settings::GitPanelSettings;
 use gpui::App;
+use project_diff::ProjectDiff;
 use ui::{ActiveTheme, Color, Icon, IconName, IntoElement};
 
+pub mod branch_picker;
 pub mod git_panel;
 mod git_panel_settings;
+pub mod project_diff;
 pub mod repository_selector;
 
 pub fn init(cx: &mut App) {
     GitPanelSettings::register(cx);
+    branch_picker::init(cx);
+    cx.observe_new(ProjectDiff::register).detach();
 }
 
 // TODO: Add updated status colors to theme
