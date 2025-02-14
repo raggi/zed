@@ -2454,14 +2454,15 @@ impl EditorElement {
             Block::FoldedBuffer {
                 first_excerpt,
                 prev_excerpt,
-                show_excerpt_controls,
+                excerpt_controls_before,
                 height,
+                ..
             } => {
                 let selected = selected_buffer_ids.contains(&first_excerpt.buffer_id);
                 let mut result = v_flex().id(block_id).w_full();
 
                 if let Some(prev_excerpt) = prev_excerpt {
-                    if *show_excerpt_controls {
+                    if *excerpt_controls_before {
                         result = result.child(self.render_expand_excerpt_control(
                             block_id,
                             ExpandExcerptDirection::Down,
@@ -2489,7 +2490,8 @@ impl EditorElement {
             Block::ExcerptBoundary {
                 prev_excerpt,
                 next_excerpt,
-                show_excerpt_controls,
+                excerpt_controls_before,
+                excerpt_controls_after,
                 height,
                 starts_new_buffer,
             } => {
@@ -2497,7 +2499,7 @@ impl EditorElement {
                 let mut result = v_flex().id(block_id).w_full();
 
                 if let Some(prev_excerpt) = prev_excerpt {
-                    if *show_excerpt_controls {
+                    if *excerpt_controls_before {
                         result = result.child(self.render_expand_excerpt_control(
                             block_id,
                             ExpandExcerptDirection::Down,
@@ -2530,7 +2532,7 @@ impl EditorElement {
                                 .child(div().h(FILE_HEADER_HEIGHT as f32 * window.line_height()));
                         }
 
-                        if *show_excerpt_controls {
+                        if *excerpt_controls_after {
                             result = result.child(self.render_expand_excerpt_control(
                                 block_id,
                                 ExpandExcerptDirection::Up,
@@ -2541,7 +2543,7 @@ impl EditorElement {
                             ));
                         }
                     } else {
-                        if *show_excerpt_controls {
+                        if *excerpt_controls_after {
                             result = result.child(
                                 h_flex()
                                     .relative()
