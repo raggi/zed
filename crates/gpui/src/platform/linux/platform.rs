@@ -666,6 +666,7 @@ impl CursorStyle {
             CursorStyle::DragLink => "alias",
             CursorStyle::DragCopy => "copy",
             CursorStyle::ContextualMenu => "context-menu",
+            CursorStyle::None => "none",
         }
         .to_string()
     }
