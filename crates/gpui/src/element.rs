@@ -334,7 +334,11 @@ impl<E: Element> Drawable<E> {
                 }
 
                 let bounds = window.layout_bounds(layout_id);
-                let node_id = window.next_frame.dispatch_tree.push_node();
+                let node_id = window
+                    .next_frame
+                    .dispatch_tree
+                    .push_node(&self.element.id());
+
                 let prepaint = self.element.prepaint(
                     global_id.as_ref(),
                     bounds,

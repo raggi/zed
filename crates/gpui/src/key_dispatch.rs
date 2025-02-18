@@ -86,6 +86,9 @@ pub(crate) struct DispatchNode {
     pub focus_id: Option<FocusId>,
     view_id: Option<EntityId>,
     parent: Option<DispatchNodeId>,
+
+    #[cfg(debug_assertions)]
+    pub(crate) element_id: Option<ElementId>,
 }
 
 pub(crate) struct ReusedSubtree {
@@ -159,12 +162,16 @@ impl DispatchTree {
         self.nodes.len()
     }
 
-    pub fn push_node(&mut self) -> DispatchNodeId {
+    pub fn push_node(&mut self, element_id: &Option<ElementId>) -> DispatchNodeId {
         let parent = self.node_stack.last().copied();
         let node_id = DispatchNodeId(self.nodes.len());
 
         self.nodes.push(DispatchNode {
             parent,
+
+            #[cfg(debug_assertions)]
+            element_id: element_id.clone(),
+
             ..Default::default()
         });
         self.node_stack.push(node_id);
@@ -240,7 +247,11 @@ impl DispatchTree {
     }
 
     fn move_node(&mut self, source: &mut DispatchNode) {
-        self.push_node();
+        #[cfg(debug_assertions)]
+        self.push_node(&source.element_id);
+        #[cfg(not(debug_assertions))]
+        self.push_node(None);
+
         if let Some(context) = source.context.clone() {
             self.set_key_context(context);
         }
