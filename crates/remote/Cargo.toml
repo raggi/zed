@@ -41,6 +41,9 @@ util.workspace = true
 release_channel.workspace = true
 which.workspace = true
 
+[target.'cfg(windows)'.dependencies]
+smol_windows_uds= { path = "../smol_windows_uds" }
+
 [dev-dependencies]
 gpui = { workspace = true, features = ["test-support"] }
 fs = { workspace = true, features = ["test-support"] }

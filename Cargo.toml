@@ -123,6 +123,7 @@ members = [
     "crates/session",
     "crates/settings",
     "crates/settings_ui",
+    "crates/smol_windows_uds",
     "crates/snippet",
     "crates/snippet_provider",
     "crates/snippets_ui",
@@ -381,6 +382,7 @@ async-compat = "0.2.1"
 async-compression = { version = "0.4", features = ["gzip", "futures-io"] }
 async-dispatcher = "0.1"
 async-fs = "2.1"
+async-io = "2.4"
 async-pipe = { git = "https://github.com/zed-industries/async-pipe-rs", rev = "82d00a04211cf4e1236029aa03e6b6ce2a74c553" }
 async-recursion = "1.0.0"
 async-tar = "0.5.0"
@@ -561,6 +563,7 @@ tree-sitter-ruby = "0.23"
 tree-sitter-rust = "0.23"
 tree-sitter-typescript = "0.23"
 tree-sitter-yaml = { git = "https://github.com/zed-industries/tree-sitter-yaml", rev = "baff0b51c64ef6a1fb1f8390f3ad6015b83ec13a" }
+uds_windows = "1.1.0"
 unicase = "2.6"
 unindent = "0.2.0"
 unicode-segmentation = "1.10"

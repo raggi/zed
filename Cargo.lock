@@ -11026,6 +11026,7 @@ dependencies = [
  "serde_json",
  "shlex",
  "smol",
+ "smol_windows_uds",
  "tempfile",
  "thiserror 1.0.69",
  "util",
@@ -12507,6 +12508,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fad6c857cbab2627dcf01ec85a623ca4e7dcb5691cbaa3d7fb7653671f0d09c9"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "smol_windows_uds"
+version = "0.1.0"
+dependencies = [
+ "async-io",
+ "futures 0.3.31",
+ "futures-lite 1.13.0",
+ "smol",
+ "tempfile",
+ "uds_windows",
 ]
 
 [[package]]

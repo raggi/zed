@@ -1439,7 +1439,7 @@ impl RemoteConnection for SshRemoteConnection {
 }
 
 impl SshRemoteConnection {
-    #[cfg(not(unix))]
+    #[cfg(not(any(unix, windows)))]
     async fn new(
         _connection_options: SshConnectionOptions,
         _delegate: Arc<dyn SshClientDelegate>,
@@ -1447,8 +1447,7 @@ impl SshRemoteConnection {
     ) -> Result<Self> {
         Err(anyhow!("ssh is not supported on this platform"))
     }
-
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     async fn new(
         connection_options: SshConnectionOptions,
         delegate: Arc<dyn SshClientDelegate>,
@@ -1456,8 +1455,11 @@ impl SshRemoteConnection {
     ) -> Result<Self> {
         use futures::AsyncWriteExt as _;
         use futures::{io::BufReader, AsyncBufReadExt as _};
-        use smol::net::unix::UnixStream;
-        use smol::{fs::unix::PermissionsExt as _, net::unix::UnixListener};
+        #[cfg(unix)]
+        use smol::net::unix::*;
+        #[cfg(windows)]
+        use smol_windows_uds::*;
+
         use util::ResultExt as _;
 
         delegate.set_status(Some("Connecting"), cx);
@@ -1509,28 +1511,59 @@ impl SshRemoteConnection {
             }
         });
 
-        anyhow::ensure!(
-            which::which("nc").is_ok(),
-            "Cannot find `nc` command (netcat), which is required to connect over SSH."
-        );
+        let askpass_script_path = if cfg!(windows) {
+            temp_dir.path().join("askpass.ps1")
+        } else {
+            temp_dir.path().join("askpass.sh")
+        };
 
-        // Create an askpass script that communicates back to this process.
-        let askpass_script = format!(
-            "{shebang}\n{print_args} | {nc} -U {askpass_socket} 2> /dev/null \n",
-            // on macOS `brew install netcat` provides the GNU netcat implementation
-            // which does not support -U.
-            nc = if cfg!(target_os = "macos") {
-                "/usr/bin/nc"
-            } else {
-                "nc"
-            },
-            askpass_socket = askpass_socket.display(),
-            print_args = "printf '%s\\0' \"$@\"",
-            shebang = "#!/bin/sh",
-        );
-        let askpass_script_path = temp_dir.path().join("askpass.sh");
-        fs::write(&askpass_script_path, askpass_script).await?;
-        fs::set_permissions(&askpass_script_path, std::fs::Permissions::from_mode(0o755)).await?;
+        #[cfg(unix)]
+        {
+            anyhow::ensure!(
+                which::which("nc").is_ok(),
+                "Cannot find `nc` command (netcat), which is required to connect over SSH."
+            );
+
+            // Create an askpass script that communicates back to this process.
+            let askpass_script = format!(
+                "{shebang}\n{print_args} | {nc} -U {askpass_socket} 2> /dev/null \n",
+                // on macOS `brew install netcat` provides the GNU netcat implementation
+                // which does not support -U.
+                nc = if cfg!(target_os = "macos") {
+                    "/usr/bin/nc"
+                } else {
+                    "nc"
+                },
+                askpass_socket = askpass_socket.display(),
+                print_args = "printf '%s\\0' \"$@\"",
+                shebang = "#!/bin/sh",
+            );
+            let askpass_script_path = temp_dir.path().join("askpass.sh");
+            fs::write(&askpass_script_path, askpass_script).await?;
+            fs::set_permissions(&askpass_script_path, std::fs::Permissions::from_mode(0o755))
+                .await?;
+        };
+        #[cfg(windows)]
+        {
+            // Create the askpass script that uses PowerShell to communicate with the Unix socket
+            let askpass_script = format!(
+                "@echo off\r\n\
+                powershell -Command \"$prompt = $args -join ' '; \
+                $bytes = [System.Text.Encoding]::UTF8.GetBytes($prompt + [char]0); \
+                $socket = New-Object System.Net.Sockets.Socket([System.Net.Sockets.AddressFamily]::Unix, [System.Net.Sockets.SocketType]::Stream, [System.Net.Sockets.ProtocolType]::Unspecified); \
+                $endpoint = New-Object System.Net.Sockets.UnixDomainSocketEndPoint('{}'); \
+                $socket.Connect($endpoint); \
+                $socket.Send($bytes) | Out-Null; \
+                $buffer = New-Object byte[] 1024; \
+                $received = $socket.Receive($buffer); \
+                $response = [System.Text.Encoding]::UTF8.GetString($buffer, 0, $received); \
+                $socket.Close(); \
+                Write-Output $response\"",
+                askpass_socket.display().to_string().replace("\\", "\\\\")
+            );
+
+            fs::write(&askpass_script_path, askpass_script).await?;
+        };
 
         // Start the master SSH process, which does not do anything except for establish
         // the connection and keep it open, allowing other ssh commands to reuse it
